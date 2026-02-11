@@ -126,6 +126,7 @@
             complete: function(results) {
                 if (!results.data || results.data.length === 0) return;
 
+                let labelAdded = false;
                 results.data.forEach(row => {
                     const lat = row.Latitude;
                     const lng = row.Longitude;
