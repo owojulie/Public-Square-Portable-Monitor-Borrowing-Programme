@@ -1,102 +1,235 @@
-<script>
-  const map = L.map('map', { zoomControl: false }).setView([0.3136, 32.5811], 12);
-  L.control.zoom({ position: 'topright' }).addTo(map);
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Kampala Air Quality Map</title>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; OpenStreetMap &copy; CARTO',
-    subdomains: 'abcd',
-    maxZoom: 20
-  }).addTo(map);
+  <!-- Leaflet -->
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
 
-  function getPmColor(pmValue) {
-    if (pmValue >= 250.5) return '#800000';
-    if (pmValue >= 150.5) return '#800080';
-    if (pmValue >= 55.5)  return '#FF0000';
-    if (pmValue >= 35.5)  return '#FFA500';
-    if (pmValue >= 12.1)  return '#FFFF00';
-    return '#00FF00';
-  }
+  <!-- Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;700&display=swap" rel="stylesheet">
 
-  const dataFiles = [
-    { file: "julian.csv", contributor: "Owomugisha Julian" },
-    { file: "raymond.csv", contributor: "Mujuni Raymond" },
-    { file: "ritah.csv", contributor: "Arinaitwe Ritah" },
-    { file: "joseph1.csv", contributor: "Joe Walker" },
-    { file: "joseph.csv", contributor: "Joseph Beyanga" },
-    { file: "jackie.csv", contributor: "Jackline Asiimwe" },
-    { file: "raymondz.csv", contributor: "Raymond" },
-    { file: "mackline.csv", contributor: "Arinda Mackline" },
-    { file: "joel.csv", contributor: "Joel Mukisa" },
-    { file: "canary.csv", contributor: "Mugume Canary" },
-    { file: "julian1.csv", contributor: "Tabaro Julian" },
-    { file: "julian2.csv", contributor: "Tabaro Julian" },
-    { file: "julian3.csv", contributor: "Owomugisha Julian" },
-    { file: "inasio.csv", contributor: "Inasio Govule" },
-    { file: "boda.csv", contributor: "Boda Boda Man" }
-  ];
+  <style>
+    body { margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; }
+    #map { height: 100vh; width: 100%; z-index: 1; }
 
-  // helpful: show errors in console if a CSV fails
-  function loadCsv(item) {
-    Papa.parse(item.file, {
-      download: true,
-      header: true,
-      dynamicTyping: true,
-      skipEmptyLines: true,
-      complete: function(results) {
-        if (!results.data || results.data.length === 0) {
-          console.warn("No data in:", item.file);
-          return;
-        }
-
-        results.data.forEach(row => {
-          const lat = row.Latitude ?? row.latitude ?? row.lat;
-          const lng = row.Longitude ?? row.longitude ?? row.lon ?? row.lng;
-
-          // Sometimes headers differ; try a few common variants:
-          const pmValue =
-            row["PM 2.5"] ?? row["PM2.5"] ?? row["PM_2_5"] ?? row["pm2_5"] ?? row["pm25"];
-
-          if (lat && lng && pmValue !== undefined && pmValue !== null && pmValue !== "") {
-            L.circleMarker([lat, lng], {
-              radius: 5,
-              fillColor: getPmColor(pmValue),
-              color: "transparent",
-              weight: 0,
-              fillOpacity: 0.7
-            })
-            .addTo(map)
-            .bindPopup(`
-              <div style="font-family: Montserrat; text-align: center;">
-                <strong style="font-size: 14px;">${item.contributor}</strong><br>
-                <span style="font-size: 12px; color: #555;">PM2.5 Level</span><br>
-                <strong style="font-size: 18px; color: ${getPmColor(pmValue)};">${pmValue} µg/m³</strong>
-              </div>
-            `);
-          }
-        });
-      },
-      error: function(err) {
-        console.error("PapaParse failed for:", item.file, err);
-      }
-    });
-  }
-
-  dataFiles.forEach(loadCsv);
-
-  // Legend
-  const legend = L.control({position: 'bottomleft'});
-  legend.onAdd = function () {
-    const div = L.DomUtil.create('div', 'legend');
-    const grades = [0, 12.1, 35.5, 55.5, 150.5, 250.5];
-    const labels = ['Good', 'Moderate', 'Unhealthy (Sens.)', 'Unhealthy', 'Very Unhealthy', 'Hazardous'];
-
-    div.innerHTML += '<b>PM2.5 Index</b><br>';
-    for (let i = 0; i < grades.length; i++) {
-      div.innerHTML +=
-        '<i style="background:' + getPmColor(grades[i] + 1) + '"></i> ' +
-        labels[i] + '<br>';
+    /* --- BRANDING BOX (Top Left) --- */
+    .branding-box {
+      position: absolute;
+      top: 20px;
+      left: 20px;
+      z-index: 1000;
+      background-color: white;
+      padding: 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.15);
+      max-width: 320px;
     }
-    return div;
-  };
-  legend.addTo(map);
-</script>
+    .branding-box img { max-height: 50px; margin-bottom: 10px; }
+    .branding-box h1 {
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+      color: #2c3e50;
+      line-height: 1.2;
+    }
+    .branding-box p {
+      margin: 6px 0 0 0;
+      font-size: 13px;
+      color: #7f8c8d;
+      line-height: 1.4;
+    }
+
+    /* --- LEGEND (Bottom Left) --- */
+    .legend {
+      background: white;
+      padding: 12px;
+      line-height: 20px;
+      color: #555;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 8px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
+    }
+    .legend i {
+      width: 15px;
+      height: 15px;
+      float: left;
+      margin-right: 8px;
+      border-radius: 50%;
+      opacity: 0.8;
+    }
+
+    /* --- PERMANENT CONTRIBUTOR LABEL --- */
+    .contributor-label {
+      background: white;
+      color: #2c3e50;
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 11px;
+      font-weight: 700;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      border: none;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="branding-box">
+    <!-- Put your logo file in the same folder as this HTML, or replace with a full URL -->
+    <img src="logo.png" alt="Program Logo">
+    <h1>Public Square Portable Monitor Borrowing Programme</h1>
+    <p>Visualizing community-led air quality monitoring across Kampala.</p>
+  </div>
+
+  <div id="map"></div>
+
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+
+  <script>
+    // 1. Initialize Map (Centered on Kampala)
+    const map = L.map('map', { zoomControl: false }).setView([0.3136, 32.5811], 12);
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    // 2. Base map tiles
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(map);
+
+    // 3. PM2.5 Colors (US EPA-like breakpoints)
+    function getPmColor(pmValue) {
+      if (pmValue >= 250.5) return '#800000'; // Maroon
+      if (pmValue >= 150.5) return '#800080'; // Purple
+      if (pmValue >= 55.5)  return '#FF0000'; // Red
+      if (pmValue >= 35.5)  return '#FFA500'; // Orange
+      if (pmValue >= 12.1)  return '#FFFF00'; // Yellow
+      return '#00FF00';                       // Green
+    }
+
+    // 4. Your CSV files (must be in the same folder as this HTML unless you add paths)
+    const dataFiles = [
+      { file: "julian.csv",   contributor: "Owomugisha Julian" },
+      { file: "raymond.csv",  contributor: "Mujuni Raymond" },
+      { file: "ritah.csv",    contributor: "Arinaitwe Ritah" },
+      { file: "joseph1.csv",  contributor: "Joe Walker" },
+      { file: "joseph.csv",   contributor: "Joseph Beyanga" },
+      { file: "jackie.csv",   contributor: "Jackline Asiimwe" },
+      { file: "raymondz.csv", contributor: "Raymond" },
+      { file: "mackline.csv", contributor: "Arinda Mackline" },
+      { file: "joel.csv",     contributor: "Joel Mukisa" },
+      { file: "canary.csv",   contributor: "Mugume Canary" },
+      { file: "julian1.csv",  contributor: "Tabaro Julian" },
+      { file: "julian2.csv",  contributor: "Tabaro Julian" },
+      { file: "julian3.csv",  contributor: "Owomugisha Julian" },
+      { file: "inasio.csv",   contributor: "Inasio Govule" },
+      { file: "boda.csv",     contributor: "Boda Boda Man" }
+    ];
+
+    // Helper: accept possible header variants (in case your CSV columns differ)
+    function pick(row, keys) {
+      for (const k of keys) {
+        if (row[k] !== undefined && row[k] !== null && row[k] !== "") return row[k];
+      }
+      return null;
+    }
+
+    function loadCsv(item) {
+      Papa.parse(item.file, {
+        download: true,
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+
+        complete: function(results) {
+          if (!results.data || results.data.length === 0) {
+            console.warn("No rows found in:", item.file);
+            return;
+          }
+
+          let labelAdded = false; // Only add contributor label once (at first valid point)
+
+          results.data.forEach(row => {
+            const lat = pick(row, ["Latitude", "latitude", "lat", "LAT"]);
+            const lng = pick(row, ["Longitude", "longitude", "lng", "lon", "LON", "LONG"]);
+            const pmValue = pick(row, ["PM 2.5", "PM2.5", "PM_2_5", "pm2_5", "pm25"]);
+
+            if (lat && lng && pmValue !== null) {
+              const marker = L.circleMarker([lat, lng], {
+                radius: 5,
+                fillColor: getPmColor(pmValue),
+                color: "transparent",
+                weight: 0,
+                fillOpacity: 0.7
+              })
+              .addTo(map)
+              .bindPopup(`
+                <div style="font-family: Montserrat; text-align: center;">
+                  <strong style="font-size: 14px;">${item.contributor}</strong><br>
+                  <span style="font-size: 12px; color: #555;">PM2.5 Level</span><br>
+                  <strong style="font-size: 18px; color: ${getPmColor(pmValue)};">${pmValue} µg/m³</strong>
+                </div>
+              `);
+
+              // Permanent contributor tag at the "start" of their dataset (first valid point)
+              if (!labelAdded) {
+                marker.bindTooltip(item.contributor, {
+                  permanent: true,
+                  direction: "top",
+                  offset: [0, -10],
+                  className: "contributor-label",
+                  opacity: 0.95
+                }).openTooltip();
+
+                labelAdded = true;
+              }
+            }
+          });
+
+          if (!labelAdded) {
+            console.warn("No valid lat/lng/pm rows found for:", item.file);
+          }
+        },
+
+        error: function(err) {
+          console.error("Failed to load:", item.file, err);
+        }
+      });
+    }
+
+    // Load all CSVs
+    dataFiles.forEach(loadCsv);
+
+    // 6. Legend
+    const legend = L.control({ position: 'bottomleft' });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'legend');
+      const grades = [0, 12.1, 35.5, 55.5, 150.5, 250.5];
+      const labels = ['Good', 'Moderate', 'Unhealthy (Sens.)', 'Unhealthy', 'Very Unhealthy', 'Hazardous'];
+
+      div.innerHTML += '<b>PM2.5 Index</b><br>';
+      for (let i = 0; i < grades.length; i++) {
+        div.innerHTML +=
+          '<i style="background:' + getPmColor(grades[i] + 1) + '"></i> ' +
+          labels[i] + '<br>';
+      }
+      return div;
+    };
+    legend.addTo(map);
+
+    /*
+      IMPORTANT:
+      If you open this HTML by double-clicking (file://), browsers may block CSV loading.
+      Run a local server instead, e.g.:
+        python -m http.server 8000
+      then open:
+        http://localhost:8000/
+    */
+  </script>
+</body>
+</html>
