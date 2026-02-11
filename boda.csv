@@ -1,4 +1,4 @@
-ObjectID,Session_Name,Timestamp,Latitude,Longitude,PM10,PM2.5
+ObjectID,Session_Name,Timestamp,Latitude,Longitude,PM 10,PM 2.5
 1,Muyenga to Downtown,2025-06-23T16:28:32.000,0.2838417,32.6227883,298,159
 2,Muyenga to Downtown,2025-06-23T16:28:33.000,0.2838417,32.6227883,302,161
 3,Muyenga to Downtown,2025-06-23T16:28:34.000,0.2838417,32.6227883,302,161

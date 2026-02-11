@@ -1,4 +1,4 @@
-ObjectID,Session_Name,Timestamp,Latitude,Longitude,PM 10,PM2.5
+ObjectID,Session_Name,Timestamp,Latitude,Longitude,PM 10,PM 2.5
 1,Air Quality Run With Raymond Mujuni,2025-06-17T18:25:03.000,0.366252609,32.63360647,24,22
 2,Air Quality Run With Raymond Mujuni,2025-06-17T18:25:04.000,0.366261815,32.6336029,17,16
 3,Air Quality Run With Raymond Mujuni,2025-06-17T18:25:05.000,0.366268474,32.63360006,17,16

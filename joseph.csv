@@ -1,4 +1,4 @@
-ObjectID,Session_Name,Timestamp,Latitude,Longitude,PM 10,PM2.5
+ObjectID,Session_Name,Timestamp,Latitude,Longitude,PM 10,PM 2.5
 1,Kampala Breathes 1,2025-06-14T08:12:48.000,0.363682453,32.63449424,55,37
 2,Kampala Breathes 1,2025-06-14T08:12:49.000,0.363677186,32.6344741,91,55
 3,Kampala Breathes 1,2025-06-14T08:12:50.000,0.363686417,32.63445652,98,58

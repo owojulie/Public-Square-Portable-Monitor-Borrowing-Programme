@@ -1,4 +1,4 @@
-ObjectID,Session_Name,Timestamp,Latitude,Longitude,PM 10,PM2.5
+ObjectID,Session_Name,Timestamp,Latitude,Longitude,PM 10,PM 2.5
 1,Continuation,2025-06-14T08:25:43.000,0.363942059,32.64093761,277,148
 2,Continuation,2025-06-14T08:25:44.000,0.363950258,32.64094952,270,145
 3,Continuation,2025-06-14T08:25:45.000,0.363959579,32.64095973,262,140
