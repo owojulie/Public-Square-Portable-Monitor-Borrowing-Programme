@@ -146,7 +146,7 @@
       font-weight: 700;
       margin-bottom:6px;
     }
-    select, input[type="number"], input[type="text"]{
+    select, input[type="number"]{
       width:100%;
       padding:10px 10px;
       border:1px solid rgba(0,0,0,0.10);
@@ -203,6 +203,7 @@
       line-height: 1.35;
       margin-top: 8px;
     }
+
     .toast{
       position: fixed;
       left: 50%;
@@ -263,14 +264,9 @@
       filter: drop-shadow(0 2px 2px rgba(0,0,0,0.15));
     }
 
-    @media (max-width: 920px){
-      .panel{ width: 340px; }
-      .branding-box{ max-width: 320px; }
-    }
     @media (max-width: 780px){
-      .panel{ top:auto; bottom: 18px; right: 18px; }
+      .panel{ top:auto; bottom: 18px; right: 18px; max-height: 60vh; overflow:auto; }
       .branding-box{ top:18px; left:18px; max-width: calc(100vw - 36px); }
-      .panel{ max-height: 60vh; overflow:auto; }
     }
   </style>
 </head>
@@ -318,7 +314,7 @@
         <div class="note" id="statNote">Loading data…</div>
       </div>
 
-      <!-- Public health story / safety -->
+      <!-- Public guidance -->
       <div class="section">
         <h3>Public guidance</h3>
         <div class="note">
@@ -362,9 +358,7 @@
 
         <div class="checks" style="margin-top:10px;">
           <label class="check"><input type="checkbox" id="chkPoints" checked> Points</label>
-          <label class="check"><input type="checkbox" id="chkRoutes" checked> Routes</label>
           <label class="check"><input type="checkbox" id="chkLabels" checked> Start labels</label>
-          <label class="check"><input type="checkbox" id="chkHotspots" checked> Hotspots</label>
           <label class="check"><input type="checkbox" id="chkAutoZoom" checked> Auto-zoom</label>
         </div>
 
@@ -373,7 +367,7 @@
         </div>
       </div>
 
-      <!-- Data download + methods -->
+      <!-- Transparency -->
       <div class="section">
         <h3>Transparency</h3>
         <div class="note">
@@ -398,7 +392,6 @@
     // =========================
     // 1) CONFIG: CSV FILES
     // =========================
-    // Put these CSVs in the SAME folder as this HTML, or use paths like "data/julian.csv"
     const dataFiles = [
       { file: "julian.csv",   contributor: "Owomugisha Julian" },
       { file: "raymond.csv",  contributor: "Mujuni Raymond" },
@@ -414,17 +407,18 @@
       { file: "julian2.csv",  contributor: "Tabaro Julian" },
       { file: "julian3.csv",  contributor: "Owomugisha Julian" },
       { file: "inasio.csv",   contributor: "Inasio Govule" },
-      { file: "muhoza.csv",   contributor: "Muhoza Maria" },
       { file: "boda.csv",     contributor: "Boda Boda Man" }
     ];
 
-    // Cache-busting (helps when CSVs update on GitHub Pages)
-    const DATA_VERSION = "2026-02-12"; // update this whenever you push new CSVs
+    // Cache-busting (update whenever you push new CSVs)
+    const DATA_VERSION = "2026-02-12";
 
     // =========================
     // 2) MAP SETUP
     // =========================
-    const map = L.map('map', { zoomControl: false, preferCanvas: true }).setView([0.3136, 32.5811], 12);
+    const map = L.map('map', { zoomControl: false, preferCanvas: true })
+      .setView([0.3136, 32.5811], 12);
+
     L.control.zoom({ position: 'topright' }).addTo(map);
 
     L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
@@ -434,43 +428,26 @@
     }).addTo(map);
 
     // Panes (ensure labels float above points)
-    map.createPane('routesPane');   map.getPane('routesPane').style.zIndex = 420;
-    map.createPane('pointsPane');   map.getPane('pointsPane').style.zIndex = 450;
-    map.createPane('hotspotPane');  map.getPane('hotspotPane').style.zIndex = 460;
-    map.createPane('labelsPane');   map.getPane('labelsPane').style.zIndex = 520;
+    map.createPane('pointsPane'); map.getPane('pointsPane').style.zIndex = 450;
+    map.createPane('labelsPane'); map.getPane('labelsPane').style.zIndex = 520;
 
-    // Layers
-    const routesLayer  = L.layerGroup([], { pane: 'routesPane' }).addTo(map);
-    const pointsLayer  = L.layerGroup([], { pane: 'pointsPane' }).addTo(map);
-    const hotspotsLayer= L.layerGroup([], { pane: 'hotspotPane' }).addTo(map);
-    const labelsLayer  = L.layerGroup([], { pane: 'labelsPane' }).addTo(map);
+    const pointsLayer = L.layerGroup([], { pane: 'pointsPane' }).addTo(map);
+    const labelsLayer = L.layerGroup([], { pane: 'labelsPane' }).addTo(map);
 
     // =========================
-    // 3) COLOR SCALE (PM2.5)
+    // 3) COLORS
     // =========================
     function getPmColor(pmValue) {
-      if (pmValue >= 250.5) return '#800000'; // Maroon
-      if (pmValue >= 150.5) return '#800080'; // Purple
-      if (pmValue >= 55.5)  return '#FF0000'; // Red
-      if (pmValue >= 35.5)  return '#FFA500'; // Orange
-      if (pmValue >= 12.1)  return '#FFFF00'; // Yellow
-      return '#00FF00';                       // Green
+      if (pmValue >= 250.5) return '#800000';
+      if (pmValue >= 150.5) return '#800080';
+      if (pmValue >= 55.5)  return '#FF0000';
+      if (pmValue >= 35.5)  return '#FFA500';
+      if (pmValue >= 12.1)  return '#FFFF00';
+      return '#00FF00';
     }
 
     // =========================
-    // 4) UI ELEMENTS
-    // =========================
-    const el = (id) => document.getElementById(id);
-    const toast = el('toast');
-    function showToast(msg){
-      toast.textContent = msg || "Done";
-      toast.style.display = "block";
-      clearTimeout(showToast._t);
-      showToast._t = setTimeout(() => toast.style.display = "none", 1500);
-    }
-
-    // =========================
-    // 5) LEGEND
+    // 4) LEGEND
     // =========================
     const legend = L.control({ position: 'bottomleft' });
     legend.onAdd = function () {
@@ -487,18 +464,26 @@
     legend.addTo(map);
 
     // =========================
+    // 5) UI HELPERS
+    // =========================
+    const el = (id) => document.getElementById(id);
+    const toast = el('toast');
+    function showToast(msg){
+      toast.textContent = msg || "Done";
+      toast.style.display = "block";
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.style.display = "none", 1500);
+    }
+
+    // =========================
     // 6) DATA STORAGE
     // =========================
-    // One normalized record per row:
-    // { contributor, lat, lng, pm, ts (Date|null), file }
+    // records: { contributor, lat, lng, pm, ts(Date|null), file }
     const records = [];
-    const tracksByContributor = new Map(); // contributor -> [ [lat,lng], ... ] (ordered as in file)
-    const startByContributor  = new Map(); // contributor -> {lat,lng}
-
+    const startByContributor = new Map(); // contributor -> {lat,lng}
     let filesLoaded = 0;
     let anyTimestamps = false;
 
-    // Helper: accept header variants
     function pick(row, keys) {
       for (const k of keys) {
         if (row[k] !== undefined && row[k] !== null && row[k] !== "") return row[k];
@@ -506,28 +491,22 @@
       return null;
     }
 
-    // Try parse timestamp
     function parseTimestamp(row){
       const raw = pick(row, ["Timestamp","timestamp","Time","time","DateTime","datetime","Datetime","Date","date","Recorded At","recorded_at","Created At","created_at"]);
       if (!raw) return null;
 
-      // If it's already a Date:
       if (raw instanceof Date && !isNaN(raw)) return raw;
 
-      // If numeric epoch (seconds or ms)
       if (typeof raw === "number" && isFinite(raw)) {
         const ms = raw > 1e12 ? raw : raw * 1000;
         const d = new Date(ms);
         return isNaN(d) ? null : d;
       }
 
-      // String parse
       const s = String(raw).trim();
-      // Try ISO/standard parse
       let d = new Date(s);
       if (!isNaN(d)) return d;
 
-      // Try replacing space with T for "YYYY-MM-DD HH:mm:ss"
       d = new Date(s.replace(" ", "T"));
       if (!isNaN(d)) return d;
 
@@ -546,13 +525,8 @@
 
         complete: function(results) {
           const data = results.data || [];
-          if (!data.length) {
-            console.warn("No rows found in:", item.file);
-            doneOne();
-            return;
-          }
+          if (!data.length) { doneOne(); return; }
 
-          const track = [];
           let startSet = false;
 
           data.forEach(row => {
@@ -560,12 +534,12 @@
             const lng = pick(row, ["Longitude","longitude","lng","lon","LON","LONG"]);
             const pm  = pick(row, ["PM 2.5","PM2.5","PM_2_5","pm2_5","pm25","PM25","pm_2_5"]);
 
-            if (lat && lng) {
-              track.push([lat, lng]);
-              if (!startSet) {
+            if (lat && lng && !startSet) {
+              // start point (first valid coordinate in file)
+              if (!startByContributor.has(item.contributor)) {
                 startByContributor.set(item.contributor, { lat, lng });
-                startSet = true;
               }
+              startSet = true;
             }
 
             const ts = parseTimestamp(row);
@@ -582,12 +556,6 @@
             }
           });
 
-          if (track.length) {
-            if (!tracksByContributor.has(item.contributor)) tracksByContributor.set(item.contributor, []);
-            // Append (supports same contributor multiple files)
-            tracksByContributor.get(item.contributor).push(...track);
-          }
-
           doneOne();
         },
 
@@ -602,25 +570,22 @@
       filesLoaded++;
       if (filesLoaded === dataFiles.length) {
         initUIFromData();
-        applyStateFromURL();
+        applyStateFromURL();   // IMPORTANT: guarded view logic is inside here
         render();
       }
     }
 
-    // Start loading
     dataFiles.forEach(loadCsv);
 
     // =========================
     // 8) UI INIT
     // =========================
     function initUIFromData(){
-      // last updated
       el('lastUpdated').textContent = "Last updated: " + new Date(document.lastModified).toLocaleString();
 
       // contributor dropdown
       const contributors = Array.from(new Set(records.map(r => r.contributor))).sort((a,b)=>a.localeCompare(b));
       const sel = el('selContributor');
-      // clear existing except first
       while (sel.options.length > 1) sel.remove(1);
       contributors.forEach(name => {
         const opt = document.createElement('option');
@@ -629,14 +594,14 @@
         sel.appendChild(opt);
       });
 
-      // timestamp note
       el('timeNote').style.display = anyTimestamps ? "none" : "block";
+      el('statNote').textContent = anyTimestamps
+        ? "Tip: use Time window to monitor recent conditions."
+        : "Tip: add a timestamp column to enable Last 24h / 7d monitoring.";
 
       // wiring
-      [
-        'selContributor','selTime','minPM','maxPM',
-        'chkPoints','chkRoutes','chkLabels','chkHotspots','chkAutoZoom'
-      ].forEach(id => el(id).addEventListener('change', () => { updateURLState(); render(); }));
+      ['selContributor','selTime','minPM','maxPM','chkPoints','chkLabels','chkAutoZoom']
+        .forEach(id => el(id).addEventListener('change', () => { updateURLState(); render(); }));
 
       el('btnReset').addEventListener('click', () => {
         resetUI();
@@ -645,19 +610,30 @@
         showToast("Reset");
       });
 
+      // ✅ Share: if auto-zoom is ON, fit to filtered data BEFORE copying
       el('btnShare').addEventListener('click', async () => {
+        if (el('chkAutoZoom').checked) {
+          const filtered = getFilteredRecords();
+          const ll = filtered.map(r => [r.lat, r.lng]);
+          if (ll.length) {
+            map.fitBounds(ll, { padding: [70, 70] });
+            map.once('moveend', async () => {
+              updateURLState();
+              const url = window.location.href;
+              try { await navigator.clipboard.writeText(url); showToast("Link copied"); }
+              catch (e) { prompt("Copy this link:", url); }
+            });
+            return;
+          }
+        }
+
         updateURLState();
         const url = window.location.href;
-        try{
-          await navigator.clipboard.writeText(url);
-          showToast("Link copied");
-        }catch(e){
-          prompt("Copy this link:", url);
-        }
+        try { await navigator.clipboard.writeText(url); showToast("Link copied"); }
+        catch (e) { prompt("Copy this link:", url); }
       });
 
       el('btnDownloadList').addEventListener('click', () => {
-        // Open a simple data list in a new window (works on GitHub Pages)
         const html = `
           <html><head><title>Data downloads</title>
           <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -696,12 +672,7 @@
         }
       });
 
-      // initial stats note
-      el('statNote').textContent = anyTimestamps
-        ? "Tip: use Time window to monitor recent conditions."
-        : "Tip: add a timestamp column to enable Last 24h / 7d monitoring.";
-
-      // Auto-zoom first time (if enabled)
+      // Initial auto-zoom (only after data is loaded)
       if (el('chkAutoZoom').checked) {
         const all = records.map(r => [r.lat, r.lng]);
         if (all.length) map.fitBounds(all, { padding: [70, 70] });
@@ -714,9 +685,7 @@
       el('minPM').value = 0;
       el('maxPM').value = 500;
       el('chkPoints').checked = true;
-      el('chkRoutes').checked = true;
       el('chkLabels').checked = true;
-      el('chkHotspots').checked = true;
       el('chkAutoZoom').checked = true;
     }
 
@@ -743,29 +712,20 @@
         if (who !== "__ALL__" && r.contributor !== who) return false;
         if (!(r.pm >= minPM && r.pm <= maxPM)) return false;
         if (cutoff && r.ts && r.ts < cutoff) return false;
-        if (cutoff && !r.ts) return true; // if some rows have no ts, keep them (or change to false if you prefer strict)
+        if (cutoff && !r.ts) return true; // keep rows missing timestamps
         return true;
       });
     }
 
     function render(){
-      // Clear layers
-      routesLayer.clearLayers();
       pointsLayer.clearLayers();
       labelsLayer.clearLayers();
-      hotspotsLayer.clearLayers();
 
       const showPoints = el('chkPoints').checked;
-      const showRoutes = el('chkRoutes').checked;
       const showLabels = el('chkLabels').checked;
-      const showHotspots = el('chkHotspots').checked;
-
       const filtered = getFilteredRecords();
 
-      // Stats
-      updateStats(filtered);
-
-      // Points
+      // points
       if (showPoints) {
         filtered.forEach(r => {
           L.circleMarker([r.lat, r.lng], {
@@ -788,22 +748,7 @@
         });
       }
 
-      // Routes (by contributor)
-      if (showRoutes) {
-        const who = el('selContributor').value;
-        const contributors = who === "__ALL__"
-          ? Array.from(tracksByContributor.keys())
-          : [who];
-
-        contributors.forEach(name => {
-          const track = tracksByContributor.get(name) || [];
-          if (track.length > 1) {
-            L.polyline(track, { pane:'routesPane', weight: 2, opacity: 0.5 }).addTo(routesLayer);
-          }
-        });
-      }
-
-      // Start labels (by contributor start point)
+      // start labels
       if (showLabels) {
         const who = el('selContributor').value;
         const contributors = who === "__ALL__"
@@ -814,7 +759,6 @@
           const s = startByContributor.get(name);
           if (!s) return;
 
-          // Start ring
           L.circleMarker([s.lat, s.lng], {
             pane: 'labelsPane',
             radius: 10,
@@ -824,7 +768,6 @@
             opacity: 0.9
           }).addTo(labelsLayer);
 
-          // Div icon label
           const labelIcon = L.divIcon({
             className: "",
             html: `<div class="start-label">${name}</div>`,
@@ -840,16 +783,14 @@
         });
       }
 
-      // Hotspots (simple grid aggregation)
-      if (showHotspots) {
-        drawHotspots(filtered);
-      }
-
-      // Auto-zoom (to filtered)
+      // auto-zoom to filtered data
       if (el('chkAutoZoom').checked) {
         const ll = filtered.map(r => [r.lat, r.lng]);
         if (ll.length) map.fitBounds(ll, { padding: [70, 70] });
       }
+
+      updateStats(filtered);
+      updateURLState();
     }
 
     function updateStats(filtered){
@@ -869,7 +810,6 @@
       el('statAvg').textContent      = avg !== null ? avg.toFixed(1) : "—";
       el('statMax').textContent      = max !== null ? max.toFixed(1) : "—";
 
-      // advocacy-friendly message
       if (!readings) {
         el('statNote').textContent = "No readings match your filters.";
         return;
@@ -884,57 +824,8 @@
         `${pct(unhealthy).toFixed(0)}% are ≥ 55.5 (unhealthy).`;
     }
 
-    function drawHotspots(filtered){
-      // Grid key by rounding lat/lng (~110m at 0.001 deg lat; adjust for your density)
-      const GRID = 0.002; // ~200m-ish; tweak to taste
-      const bins = new Map();
-
-      function key(lat,lng){
-        const la = Math.round(lat/GRID)*GRID;
-        const lo = Math.round(lng/GRID)*GRID;
-        return la.toFixed(6)+","+lo.toFixed(6);
-      }
-
-      filtered.forEach(r => {
-        const k = key(r.lat, r.lng);
-        if (!bins.has(k)) bins.set(k, { lat:0, lng:0, n:0, sum:0, max:0 });
-        const b = bins.get(k);
-        b.lat += r.lat; b.lng += r.lng;
-        b.n += 1; b.sum += r.pm;
-        if (r.pm > b.max) b.max = r.pm;
-      });
-
-      // Draw circles: size by count, color by avg
-      bins.forEach(b => {
-        const lat = b.lat / b.n;
-        const lng = b.lng / b.n;
-        const avg = b.sum / b.n;
-
-        const radiusMeters = Math.min(350, 40 + b.n * 8); // scale by density
-        const color = getPmColor(avg);
-
-        L.circle([lat, lng], {
-          pane: 'hotspotPane',
-          radius: radiusMeters,
-          color: color,
-          weight: 1,
-          fillColor: color,
-          fillOpacity: 0.12,
-          opacity: 0.6
-        }).addTo(hotspotsLayer).bindPopup(`
-          <div style="font-family: Montserrat; text-align: center;">
-            <strong style="font-size: 14px;">Hotspot area</strong><br>
-            <span style="font-size: 12px; color: #555;">Readings: <b>${b.n}</b></span><br>
-            <span style="font-size: 12px; color: #555;">Avg PM2.5:</span><br>
-            <strong style="font-size: 18px; color: ${color};">${avg.toFixed(1)} µg/m³</strong><br>
-            <span style="font-size: 11px; color: #7f8c8d;">Max: ${b.max.toFixed(1)} µg/m³</span>
-          </div>
-        `);
-      });
-    }
-
     // =========================
-    // 10) SHAREABLE URL STATE
+    // 10) URL STATE (FIXED)
     // =========================
     function updateURLState(forceReplace){
       const state = {
@@ -943,11 +834,8 @@
         min: el('minPM').value,
         max: el('maxPM').value,
         p: el('chkPoints').checked ? 1 : 0,
-        r: el('chkRoutes').checked ? 1 : 0,
         l: el('chkLabels').checked ? 1 : 0,
-        h: el('chkHotspots').checked ? 1 : 0,
         z: el('chkAutoZoom').checked ? 1 : 0,
-        // map view
         lat: map.getCenter().lat.toFixed(5),
         lng: map.getCenter().lng.toFixed(5),
         zoom: map.getZoom()
@@ -955,8 +843,7 @@
 
       const params = new URLSearchParams(state);
       const newUrl = window.location.pathname + "?" + params.toString();
-      if (forceReplace) history.replaceState(null, "", newUrl);
-      else history.replaceState(null, "", newUrl);
+      history.replaceState(null, "", newUrl);
     }
 
     function applyStateFromURL(){
@@ -965,33 +852,42 @@
 
       const c = params.get("c"); if (c) el('selContributor').value = c;
       const t = params.get("t"); if (t) el('selTime').value = t;
+
       const min = params.get("min"); if (min !== null) el('minPM').value = min;
       const max = params.get("max"); if (max !== null) el('maxPM').value = max;
 
-      const setChk = (id, key) => {
-        const v = params.get(key);
-        if (v !== null) el(id).checked = (v === "1");
-      };
-      setChk('chkPoints','p');
-      setChk('chkRoutes','r');
-      setChk('chkLabels','l');
-      setChk('chkHotspots','h');
-      setChk('chkAutoZoom','z');
+      const p = params.get("p"); if (p !== null) el('chkPoints').checked = (p === "1");
+      const l = params.get("l"); if (l !== null) el('chkLabels').checked = (l === "1");
+      const z = params.get("z"); if (z !== null) el('chkAutoZoom').checked = (z === "1");
 
+      // --- Corrected map-view logic ---
       const lat = parseFloat(params.get("lat"));
       const lng = parseFloat(params.get("lng"));
       const zoom = parseInt(params.get("zoom"), 10);
-      if (isFinite(lat) && isFinite(lng) && isFinite(zoom)) {
-        map.setView([lat, lng], zoom, { animate: false });
+
+      const autoZoomOn = params.get("z") === "1";
+
+      // If auto-zoom is ON, ignore URL lat/lng/zoom (prevents world-view links)
+      if (!autoZoomOn) {
+        const inUganda =
+          isFinite(lat) && isFinite(lng) &&
+          lat > -2 && lat < 5 &&
+          lng > 29 && lng < 36;
+
+        if (inUganda && isFinite(zoom)) {
+          map.setView([lat, lng], zoom, { animate: false });
+        } else {
+          map.setView([0.3136, 32.5811], 12, { animate: false });
+        }
       }
     }
   </script>
 
   <!--
-    Hosting notes (GitHub Pages):
-    - Ensure index.html, logo.png, and all CSV files are in the same folder (or update paths).
-    - Filenames are case-sensitive on GitHub (julian.csv ≠ Julian.csv).
-    - Update DATA_VERSION when you push new CSVs to avoid caching.
+    GitHub Pages notes:
+    - Filenames are case-sensitive (julian.csv ≠ Julian.csv).
+    - Keep index.html, logo.png, and CSVs in the same folder (or update file paths).
+    - Update DATA_VERSION when CSVs change to avoid caching.
   -->
 </body>
 </html>
