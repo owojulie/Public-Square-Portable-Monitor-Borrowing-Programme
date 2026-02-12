@@ -3,179 +3,890 @@
 <head>
   <title>Kampala Community Air Quality Map</title>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
 
+  <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+
+  <!-- Font -->
   <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;700&display=swap" rel="stylesheet">
 
   <style>
-    body { margin:0; font-family:'Montserrat', sans-serif; }
-    #map { height:100vh; width:100%; }
-
-    .branding {
-      position:absolute;
-      top:20px;
-      left:20px;
-      z-index:1200;
-      background:#fff;
-      padding:16px;
-      border-radius:14px;
-      box-shadow:0 10px 28px rgba(0,0,0,0.18);
-      max-width:340px;
+    :root{
+      --ink:#2c3e50;
+      --muted:#7f8c8d;
+      --bg:#ffffff;
+      --shadow: 0 10px 28px rgba(0,0,0,0.18);
+      --shadow2: 0 6px 18px rgba(0,0,0,0.14);
+      --radius: 14px;
     }
-    .branding h1 {
+    body { margin: 0; padding: 0; font-family: 'Montserrat', sans-serif; }
+    #map { height: 100vh; width: 100%; }
+
+    /* --- TOP LEFT BRANDING --- */
+    .branding-box {
+      position: absolute;
+      top: 18px;
+      left: 18px;
+      z-index: 1200;
+      background: var(--bg);
+      padding: 16px 16px 14px 16px;
+      border-radius: var(--radius);
+      box-shadow: var(--shadow2);
+      max-width: 360px;
+    }
+    .branding-row{
+      display:flex;
+      gap:12px;
+      align-items:center;
+    }
+    .branding-box img { max-height: 44px; max-width: 120px; object-fit: contain; }
+    .branding-box h1 {
+      margin: 0;
+      font-size: 16px;
+      font-weight: 800;
+      color: var(--ink);
+      line-height: 1.15;
+    }
+    .branding-box p {
+      margin: 8px 0 0 0;
+      font-size: 12.5px;
+      color: var(--muted);
+      line-height: 1.35;
+    }
+    .tiny {
+      margin-top: 8px;
+      font-size: 11px;
+      color: #95a5a6;
+      line-height: 1.25;
+    }
+
+    /* --- RIGHT CONTROL PANEL --- */
+    .panel {
+      position: absolute;
+      top: 18px;
+      right: 18px;
+      z-index: 1200;
+      width: 360px;
+      max-width: calc(100vw - 36px);
+      background: var(--bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+    }
+    .panel-header{
+      padding: 14px 16px;
+      border-bottom: 1px solid rgba(0,0,0,0.06);
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+    }
+    .panel-header .title{
+      font-size: 14px;
+      font-weight: 800;
+      color: var(--ink);
       margin:0;
-      font-size:16px;
-      font-weight:800;
-      color:#2c3e50;
     }
-    .branding p {
-      margin-top:6px;
-      font-size:12px;
-      color:#7f8c8d;
+    .panel-header .btnrow{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      justify-content:flex-end;
     }
-
-    .start-label {
+    .btn{
+      appearance:none;
+      border:1px solid rgba(0,0,0,0.10);
       background:#fff;
-      padding:6px 10px;
-      border-radius:10px;
-      font-size:12px;
-      font-weight:900;
-      box-shadow:0 8px 18px rgba(0,0,0,0.18);
-      border:1px solid rgba(0,0,0,0.08);
-      white-space:nowrap;
+      padding:8px 10px;
+      border-radius: 10px;
+      cursor:pointer;
+      font-weight: 700;
+      font-size: 12px;
+      color: var(--ink);
+      box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      background: #f7fbff;
+      border-color: rgba(52,152,219,0.30);
+    }
+    .panel-body{
+      padding: 12px 16px 14px 16px;
     }
 
+    .section{
+      margin-top: 12px;
+      padding-top: 12px;
+      border-top: 1px dashed rgba(0,0,0,0.10);
+    }
+    .section:first-child{
+      margin-top:0;
+      padding-top:0;
+      border-top:none;
+    }
+    .section h3{
+      margin:0 0 8px 0;
+      font-size: 12px;
+      font-weight: 800;
+      color: var(--ink);
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    label{
+      display:block;
+      font-size: 11.5px;
+      color: var(--muted);
+      font-weight: 700;
+      margin-bottom:6px;
+    }
+    select, input[type="number"]{
+      width:100%;
+      padding:10px 10px;
+      border:1px solid rgba(0,0,0,0.10);
+      border-radius: 10px;
+      font-family: inherit;
+      font-size: 12.5px;
+      outline:none;
+    }
+    .checks{
+      display:flex;
+      flex-wrap:wrap;
+      gap:10px 12px;
+      align-items:center;
+    }
+    .check{
+      display:flex;
+      gap:8px;
+      align-items:center;
+      font-size: 12px;
+      color: var(--ink);
+      font-weight: 700;
+      user-select:none;
+    }
+    .check input{ width: 16px; height: 16px; }
+
+    .stats{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .card{
+      border:1px solid rgba(0,0,0,0.08);
+      border-radius: 12px;
+      padding:10px 10px;
+      background: #fff;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+    }
+    .card .k{
+      font-size: 11px;
+      color: var(--muted);
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: .03em;
+    }
+    .card .v{
+      font-size: 18px;
+      color: var(--ink);
+      font-weight: 900;
+      margin-top: 4px;
+    }
+    .note{
+      font-size: 11.5px;
+      color: #6c7a89;
+      line-height: 1.35;
+      margin-top: 8px;
+    }
+
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(44,62,80,0.95);
+      color: #fff;
+      font-weight: 700;
+      font-size: 12px;
+      padding: 10px 12px;
+      border-radius: 999px;
+      z-index: 2000;
+      display:none;
+      box-shadow: var(--shadow2);
+    }
+
+    /* --- LEGEND (BOTTOM LEFT) --- */
     .legend {
-      background:white;
-      padding:12px;
-      line-height:20px;
-      border-radius:12px;
-      font-size:12px;
-      box-shadow:0 0 15px rgba(0,0,0,0.2);
+      background: white;
+      padding: 12px 12px 10px 12px;
+      line-height: 20px;
+      color: #555;
+      box-shadow: 0 0 15px rgba(0,0,0,0.2);
+      border-radius: 12px;
+      font-family: 'Montserrat', sans-serif;
+      font-size: 12px;
     }
     .legend i {
-      width:15px;
-      height:15px;
-      float:left;
-      margin-right:8px;
-      border-radius:50%;
-      opacity:0.85;
+      width: 15px;
+      height: 15px;
+      float: left;
+      margin-right: 8px;
+      border-radius: 50%;
+      opacity: 0.85;
+    }
+
+    /* --- LABEL (DIV ICON) --- */
+    .start-label {
+      position: relative;
+      background: white;
+      color: var(--ink);
+      border-radius: 10px;
+      padding: 7px 10px;
+      font-size: 12px;
+      font-weight: 900;
+      box-shadow: 0 8px 18px rgba(0,0,0,0.18);
+      border: 1px solid rgba(0,0,0,0.08);
+      white-space: nowrap;
+    }
+    .start-label::after {
+      content:"";
+      position:absolute;
+      left: 18px;
+      bottom:-8px;
+      border-width:8px 8px 0 8px;
+      border-style:solid;
+      border-color:white transparent transparent transparent;
+      filter: drop-shadow(0 2px 2px rgba(0,0,0,0.15));
+    }
+
+    @media (max-width: 780px){
+      .panel{ top:auto; bottom: 18px; right: 18px; max-height: 60vh; overflow:auto; }
+      .branding-box{ top:18px; left:18px; max-width: calc(100vw - 36px); }
     }
   </style>
 </head>
 
 <body>
+  <!-- Branding -->
+  <div class="branding-box">
+    <div class="branding-row">
+      <img src="logo.png" alt="Program Logo" />
+      <div>
+        <h1>Public Square Portable Monitor Borrowing Programme</h1>
+        <p>Community-led air quality monitoring across Kampala.</p>
+      </div>
+    </div>
+    <div class="tiny">
+      <div><b>How to read:</b> colored dots represent PM2.5 (µg/m³).</div>
+      <div><b>Note:</b> community measurements, not official regulatory data.</div>
+      <div id="lastUpdated"></div>
+    </div>
+  </div>
 
-<div class="branding">
-  <h1>Public Square Portable Monitor Programme</h1>
-  <p>Community-led air quality monitoring across Kampala.</p>
-</div>
+  <!-- Map -->
+  <div id="map"></div>
 
-<div id="map"></div>
+  <!-- Control Panel -->
+  <div class="panel" id="panel">
+    <div class="panel-header">
+      <p class="title">Filters & Monitoring</p>
+      <div class="btnrow">
+        <button class="btn primary" id="btnShare">Share view</button>
+        <button class="btn" id="btnReset">Reset</button>
+      </div>
+    </div>
 
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
+    <div class="panel-body">
+      <!-- Summary stats -->
+      <div class="section">
+        <h3>Summary</h3>
+        <div class="stats">
+          <div class="card"><div class="k">Readings</div><div class="v" id="statReadings">—</div></div>
+          <div class="card"><div class="k">Contributors</div><div class="v" id="statContrib">—</div></div>
+          <div class="card"><div class="k">Average PM2.5</div><div class="v" id="statAvg">—</div></div>
+          <div class="card"><div class="k">Max PM2.5</div><div class="v" id="statMax">—</div></div>
+        </div>
+        <div class="note" id="statNote">Loading data…</div>
+      </div>
 
-<script>
-const dataFiles = [
-  { file: "julian.csv", contributor: "Owomugisha Julian" },
-  { file: "raymond.csv", contributor: "Mujuni Raymond" },
-  { file: "ritah.csv", contributor: "Arinaitwe Ritah" },
-  { file: "joseph.csv", contributor: "Joseph Beyanga" }
-];
+      <!-- Public guidance -->
+      <div class="section">
+        <h3>Public guidance</h3>
+        <div class="note">
+          <b>PM2.5</b> are tiny particles that can enter the lungs. When the map shows
+          <b>orange/red/purple</b>, sensitive groups (children, pregnant mothers, elderly, asthma)
+          should reduce outdoor exertion. Consider a well-fitting mask near traffic hotspots.
+        </div>
+      </div>
 
-const map = L.map('map').setView([0.3136, 32.5811], 12);
+      <!-- Filters -->
+      <div class="section">
+        <h3>Filters</h3>
+        <div class="grid2">
+          <div>
+            <label for="selContributor">Contributor</label>
+            <select id="selContributor">
+              <option value="__ALL__">All contributors</option>
+            </select>
+          </div>
+          <div>
+            <label for="selTime">Time window</label>
+            <select id="selTime">
+              <option value="ALL">All time</option>
+              <option value="24H">Last 24 hours</option>
+              <option value="7D">Last 7 days</option>
+              <option value="30D">Last 30 days</option>
+            </select>
+          </div>
+        </div>
 
-L.tileLayer(
-  'https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png',
-  { attribution:'&copy; OpenStreetMap &copy; CARTO' }
-).addTo(map);
+        <div class="grid2" style="margin-top:10px;">
+          <div>
+            <label for="minPM">Min PM2.5</label>
+            <input type="number" id="minPM" min="0" step="0.1" value="0">
+          </div>
+          <div>
+            <label for="maxPM">Max PM2.5</label>
+            <input type="number" id="maxPM" min="0" step="0.1" value="500">
+          </div>
+        </div>
 
-function getPmColor(v){
-  if (v >= 250.5) return '#800000';
-  if (v >= 150.5) return '#800080';
-  if (v >= 55.5)  return '#FF0000';
-  if (v >= 35.5)  return '#FFA500';
-  if (v >= 12.1)  return '#FFFF00';
-  return '#00FF00';
-}
+        <div class="checks" style="margin-top:10px;">
+          <label class="check"><input type="checkbox" id="chkPoints" checked> Points</label>
+          <label class="check"><input type="checkbox" id="chkLabels" checked> Start labels</label>
+          <label class="check"><input type="checkbox" id="chkAutoZoom" checked> Auto-zoom</label>
+        </div>
 
-const allPoints = [];
-const contributorPoints = {};
+        <div class="note" id="timeNote" style="margin-top:8px; display:none;">
+          No timestamps detected in the data. “Time window” filter will be ignored.
+        </div>
+      </div>
 
-dataFiles.forEach(item=>{
-  Papa.parse(item.file, {
-    download:true,
-    header:true,
-    dynamicTyping:true,
-    complete:function(results){
+      <!-- Transparency -->
+      <div class="section">
+        <h3>Transparency</h3>
+        <div class="note">
+          <b>Methodology:</b> community portable monitors; readings are visualized as collected.
+          For collaboration, data and code are published on GitHub.
+        </div>
+        <div class="btnrow" style="margin-top:10px;">
+          <button class="btn" id="btnDownloadList">Download data list</button>
+          <button class="btn" id="btnCopyMethods">Copy methodology text</button>
+        </div>
+      </div>
+    </div>
+  </div>
 
-      const rows = results.data || [];
-      contributorPoints[item.contributor] = [];
+  <div class="toast" id="toast">Copied!</div>
 
-      rows.forEach(r=>{
-        const lat = r.Latitude || r.latitude || r.lat;
-        const lng = r.Longitude || r.longitude || r.lng;
-        const pm  = r["PM 2.5"] || r["PM2.5"] || r.pm25;
+  <!-- Scripts -->
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.0/papaparse.min.js"></script>
 
-        if(lat && lng && pm){
-          allPoints.push([lat,lng]);
-          contributorPoints[item.contributor].push([lat,lng]);
+  <script>
+    // =========================
+    // 1) CONFIG: CSV FILES
+    // =========================
+    const dataFiles = [
+      { file: "julian.csv",   contributor: "Owomugisha Julian" },
+      { file: "raymond.csv",  contributor: "Mujuni Raymond" },
+      { file: "ritah.csv",    contributor: "Arinaitwe Ritah" },
+      { file: "joseph1.csv",  contributor: "Joe Walker" },
+      { file: "joseph.csv",   contributor: "Joseph Beyanga" },
+      { file: "jackie.csv",   contributor: "Jackline Asiimwe" },
+      { file: "raymondz.csv", contributor: "Raymond" },
+      { file: "mackline.csv", contributor: "Arinda Mackline" },
+      { file: "joel.csv",     contributor: "Joel Mukisa" },
+      { file: "canary.csv",   contributor: "Mugume Canary" },
+      { file: "julian1.csv",  contributor: "Tabaro Julian" },
+      { file: "julian2.csv",  contributor: "Tabaro Julian" },
+      { file: "julian3.csv",  contributor: "Owomugisha Julian" },
+      { file: "inasio.csv",   contributor: "Inasio Govule" },
+      { file: "boda.csv",     contributor: "Boda Boda Man" }
+    ];
 
-          L.circleMarker([lat,lng],{
-            radius:5,
-            fillColor:getPmColor(pm),
-            color:"transparent",
-            fillOpacity:0.7
-          }).addTo(map)
-          .bindPopup(`<b>${item.contributor}</b><br>${pm} µg/m³`);
+    // Cache-busting (update whenever you push new CSVs)
+    const DATA_VERSION = "2026-02-12";
+
+    // =========================
+    // 2) MAP SETUP
+    // =========================
+    const map = L.map('map', { zoomControl: false, preferCanvas: true })
+      .setView([0.3136, 32.5811], 12);
+
+    L.control.zoom({ position: 'topright' }).addTo(map);
+
+    L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
+      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+      subdomains: 'abcd',
+      maxZoom: 20
+    }).addTo(map);
+
+    // Panes (ensure labels float above points)
+    map.createPane('pointsPane'); map.getPane('pointsPane').style.zIndex = 450;
+    map.createPane('labelsPane'); map.getPane('labelsPane').style.zIndex = 520;
+
+    const pointsLayer = L.layerGroup([], { pane: 'pointsPane' }).addTo(map);
+    const labelsLayer = L.layerGroup([], { pane: 'labelsPane' }).addTo(map);
+
+    // =========================
+    // 3) COLORS
+    // =========================
+    function getPmColor(pmValue) {
+      if (pmValue >= 250.5) return '#800000';
+      if (pmValue >= 150.5) return '#800080';
+      if (pmValue >= 55.5)  return '#FF0000';
+      if (pmValue >= 35.5)  return '#FFA500';
+      if (pmValue >= 12.1)  return '#FFFF00';
+      return '#00FF00';
+    }
+
+    // =========================
+    // 4) LEGEND
+    // =========================
+    const legend = L.control({ position: 'bottomleft' });
+    legend.onAdd = function () {
+      const div = L.DomUtil.create('div', 'legend');
+      const grades = [0, 12.1, 35.5, 55.5, 150.5, 250.5];
+      const labels = ['Good', 'Moderate', 'Unhealthy (Sens.)', 'Unhealthy', 'Very Unhealthy', 'Hazardous'];
+
+      div.innerHTML += '<b>PM2.5 Index</b><br>';
+      for (let i = 0; i < grades.length; i++) {
+        div.innerHTML += '<i style="background:' + getPmColor(grades[i] + 1) + '"></i> ' + labels[i] + '<br>';
+      }
+      return div;
+    };
+    legend.addTo(map);
+
+    // =========================
+    // 5) UI HELPERS
+    // =========================
+    const el = (id) => document.getElementById(id);
+    const toast = el('toast');
+    function showToast(msg){
+      toast.textContent = msg || "Done";
+      toast.style.display = "block";
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.style.display = "none", 1500);
+    }
+
+    // =========================
+    // 6) DATA STORAGE
+    // =========================
+    // records: { contributor, lat, lng, pm, ts(Date|null), file }
+    const records = [];
+    let filesLoaded = 0;
+    let anyTimestamps = false;
+
+    function pick(row, keys) {
+      for (const k of keys) {
+        if (row[k] !== undefined && row[k] !== null && row[k] !== "") return row[k];
+      }
+      return null;
+    }
+
+    function parseTimestamp(row){
+      const raw = pick(row, ["Timestamp","timestamp","Time","time","DateTime","datetime","Datetime","Date","date","Recorded At","recorded_at","Created At","created_at"]);
+      if (!raw) return null;
+
+      if (raw instanceof Date && !isNaN(raw)) return raw;
+
+      if (typeof raw === "number" && isFinite(raw)) {
+        const ms = raw > 1e12 ? raw : raw * 1000;
+        const d = new Date(ms);
+        return isNaN(d) ? null : d;
+      }
+
+      const s = String(raw).trim();
+      let d = new Date(s);
+      if (!isNaN(d)) return d;
+
+      d = new Date(s.replace(" ", "T"));
+      if (!isNaN(d)) return d;
+
+      return null;
+    }
+
+    // =========================
+    // 7) LOAD CSVs
+    // =========================
+    function loadCsv(item) {
+      Papa.parse(item.file + "?v=" + encodeURIComponent(DATA_VERSION), {
+        download: true,
+        header: true,
+        dynamicTyping: true,
+        skipEmptyLines: true,
+
+        complete: function(results) {
+          const data = results.data || [];
+          if (!data.length) { doneOne(); return; }
+
+          data.forEach(row => {
+            const lat = pick(row, ["Latitude","latitude","lat","LAT"]);
+            const lng = pick(row, ["Longitude","longitude","lng","lon","LON","LONG"]);
+            const pm  = pick(row, ["PM 2.5","PM2.5","PM_2_5","pm2_5","pm25","PM25","pm_2_5"]);
+
+            const ts = parseTimestamp(row);
+            if (ts) anyTimestamps = true;
+
+            if (lat && lng && pm !== null) {
+              records.push({
+                contributor: item.contributor,
+                file: item.file,
+                lat, lng,
+                pm: Number(pm),
+                ts: ts
+              });
+            }
+          });
+
+          doneOne();
+        },
+
+        error: function(err) {
+          console.error("Failed to load:", item.file, err);
+          doneOne();
+        }
+      });
+    }
+
+    function doneOne(){
+      filesLoaded++;
+      if (filesLoaded === dataFiles.length) {
+        initUIFromData();
+        applyStateFromURL();   // guarded view logic is inside here
+        render();
+      }
+    }
+
+    dataFiles.forEach(loadCsv);
+
+    // =========================
+    // 8) UI INIT
+    // =========================
+    function initUIFromData(){
+      el('lastUpdated').textContent = "Last updated: " + new Date(document.lastModified).toLocaleString();
+
+      // contributor dropdown
+      const contributors = Array.from(new Set(records.map(r => r.contributor))).sort((a,b)=>a.localeCompare(b));
+      const sel = el('selContributor');
+      while (sel.options.length > 1) sel.remove(1);
+      contributors.forEach(name => {
+        const opt = document.createElement('option');
+        opt.value = name;
+        opt.textContent = name;
+        sel.appendChild(opt);
+      });
+
+      el('timeNote').style.display = anyTimestamps ? "none" : "block";
+      el('statNote').textContent = anyTimestamps
+        ? "Tip: use Time window to monitor recent conditions."
+        : "Tip: add a timestamp column to enable Last 24h / 7d monitoring.";
+
+      // wiring
+      ['selContributor','selTime','minPM','maxPM','chkPoints','chkLabels','chkAutoZoom']
+        .forEach(id => el(id).addEventListener('change', () => { updateURLState(); render(); }));
+
+      el('btnReset').addEventListener('click', () => {
+        resetUI();
+        updateURLState(true);
+        render();
+        showToast("Reset");
+      });
+
+      // Share: if auto-zoom is ON, fit to filtered data BEFORE copying
+      el('btnShare').addEventListener('click', async () => {
+        if (el('chkAutoZoom').checked) {
+          const filtered = getFilteredRecords();
+          const ll = filtered.map(r => [r.lat, r.lng]);
+          if (ll.length) {
+            map.fitBounds(ll, { padding: [70, 70] });
+            map.once('moveend', async () => {
+              updateURLState();
+              const url = window.location.href;
+              try { await navigator.clipboard.writeText(url); showToast("Link copied"); }
+              catch (e) { prompt("Copy this link:", url); }
+            });
+            return;
+          }
+        }
+
+        updateURLState();
+        const url = window.location.href;
+        try { await navigator.clipboard.writeText(url); showToast("Link copied"); }
+        catch (e) { prompt("Copy this link:", url); }
+      });
+
+      el('btnDownloadList').addEventListener('click', () => {
+        const html = `
+          <html><head><title>Data downloads</title>
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+          <style>
+            body{font-family:Montserrat,system-ui,Arial; padding:18px; color:#2c3e50;}
+            h1{font-size:18px;}
+            ul{line-height:1.8;}
+            a{color:#1f6feb; text-decoration:none; font-weight:700;}
+            a:hover{text-decoration:underline;}
+            .muted{color:#7f8c8d; font-size:12px;}
+          </style></head><body>
+          <h1>Download CSV data</h1>
+          <div class="muted">These links download the raw community data files used on the map.</div>
+          <ul>
+            ${dataFiles.map(d => `<li><a href="${d.file}" download>${d.contributor} — ${d.file}</a></li>`).join("")}
+          </ul>
+          <div class="muted">If links fail, confirm the CSV files are in the same folder as index.html (or update paths in code).</div>
+          </body></html>`;
+        const w = window.open("", "_blank");
+        w.document.write(html);
+        w.document.close();
+      });
+
+      el('btnCopyMethods').addEventListener('click', async () => {
+        const txt =
+`Methodology (community monitoring):
+- Measurements collected using portable monitors by community contributors across Kampala.
+- Map displays PM2.5 (µg/m³) as recorded; colors follow standard PM2.5 breakpoints for interpretation.
+- This is advocacy and localized monitoring data; it does not replace official regulatory monitoring.
+- For transparency, raw CSV files and map code are published on GitHub.`;
+        try{
+          await navigator.clipboard.writeText(txt);
+          showToast("Methodology copied");
+        }catch(e){
+          prompt("Copy methodology:", txt);
         }
       });
 
-      // Place midpoint label
-      const pts = contributorPoints[item.contributor];
-      if(pts.length > 0){
-        const midIndex = Math.floor(pts.length / 2);
-        const mid = pts[midIndex];
+      // Initial auto-zoom (only after data is loaded)
+      if (el('chkAutoZoom').checked) {
+        const all = records.map(r => [r.lat, r.lng]);
+        if (all.length) map.fitBounds(all, { padding: [70, 70] });
+      }
+    }
 
-        const labelIcon = L.divIcon({
-          className:"",
-          html:`<div class="start-label">${item.contributor}</div>`,
-          iconSize:[1,1]
+    function resetUI(){
+      el('selContributor').value = "__ALL__";
+      el('selTime').value = "ALL";
+      el('minPM').value = 0;
+      el('maxPM').value = 500;
+      el('chkPoints').checked = true;
+      el('chkLabels').checked = true;
+      el('chkAutoZoom').checked = true;
+    }
+
+    // =========================
+    // 9) FILTERING + RENDERING
+    // =========================
+    function getTimeCutoff(){
+      if (!anyTimestamps) return null;
+      const mode = el('selTime').value;
+      const now = new Date();
+      if (mode === "24H") return new Date(now.getTime() - 24*60*60*1000);
+      if (mode === "7D")  return new Date(now.getTime() - 7*24*60*60*1000);
+      if (mode === "30D") return new Date(now.getTime() - 30*24*60*60*1000);
+      return null;
+    }
+
+    function getFilteredRecords(){
+      const who = el('selContributor').value;
+      const minPM = Number(el('minPM').value || 0);
+      const maxPM = Number(el('maxPM').value || 500);
+      const cutoff = getTimeCutoff();
+
+      return records.filter(r => {
+        if (who !== "__ALL__" && r.contributor !== who) return false;
+        if (!(r.pm >= minPM && r.pm <= maxPM)) return false;
+        if (cutoff && r.ts && r.ts < cutoff) return false;
+        if (cutoff && !r.ts) return true;
+        return true;
+      });
+    }
+
+    function render(){
+      pointsLayer.clearLayers();
+      labelsLayer.clearLayers();
+
+      const showPoints = el('chkPoints').checked;
+      const showLabels = el('chkLabels').checked;
+      const filtered = getFilteredRecords();
+
+      // points
+      if (showPoints) {
+        filtered.forEach(r => {
+          L.circleMarker([r.lat, r.lng], {
+            pane: 'pointsPane',
+            radius: 5,
+            fillColor: getPmColor(r.pm),
+            color: "transparent",
+            weight: 0,
+            fillOpacity: 0.72
+          }).addTo(pointsLayer).bindPopup(`
+            <div style="font-family: Montserrat; text-align: center;">
+              <strong style="font-size: 14px;">${r.contributor}</strong><br>
+              <span style="font-size: 12px; color: #555;">PM2.5 Level</span><br>
+              <strong style="font-size: 18px; color: ${getPmColor(r.pm)};">${r.pm} µg/m³</strong><br>
+              <span style="font-size: 11px; color: #7f8c8d;">
+                ${r.ts ? r.ts.toLocaleString() : "Time not provided"}
+              </span>
+            </div>
+          `);
         });
-
-        L.marker(mid,{
-          icon:labelIcon,
-          interactive:false
-        }).addTo(map);
       }
 
-      // Auto zoom after all files
-      if(Object.keys(contributorPoints).length === dataFiles.length){
-        if(allPoints.length){
-          map.fitBounds(allPoints,{padding:[50,50]});
+      // ✅ MIDPOINT LABELS (replaces start labels)
+      if (showLabels) {
+        const who = el('selContributor').value;
+
+        // group filtered points by contributor (in the same order they appear)
+        const grouped = new Map();
+        filtered.forEach(r => {
+          if (!grouped.has(r.contributor)) grouped.set(r.contributor, []);
+          grouped.get(r.contributor).push(r);
+        });
+
+        const contributorsToLabel = who === "__ALL__" ? Array.from(grouped.keys()) : [who];
+
+        contributorsToLabel.forEach(name => {
+          const arr = grouped.get(name) || [];
+          if (!arr.length) return;
+
+          const midIdx = Math.floor(arr.length / 2);
+          const mid = arr[midIdx];
+
+          // optional subtle ring
+          L.circleMarker([mid.lat, mid.lng], {
+            pane: 'labelsPane',
+            radius: 10,
+            fillColor: "transparent",
+            color: "#2c3e50",
+            weight: 2,
+            opacity: 0.9
+          }).addTo(labelsLayer);
+
+          const labelIcon = L.divIcon({
+            className: "",
+            html: `<div class="start-label">${name}</div>`,
+            iconSize: [1,1]
+          });
+
+          L.marker([mid.lat, mid.lng], {
+            pane: 'labelsPane',
+            icon: labelIcon,
+            interactive: false,
+            zIndexOffset: 1000
+          }).addTo(labelsLayer);
+        });
+      }
+
+      // auto-zoom to filtered data
+      if (el('chkAutoZoom').checked) {
+        const ll = filtered.map(r => [r.lat, r.lng]);
+        if (ll.length) map.fitBounds(ll, { padding: [70, 70] });
+      }
+
+      updateStats(filtered);
+      updateURLState();
+    }
+
+    function updateStats(filtered){
+      const readings = filtered.length;
+      const contributors = new Set(filtered.map(r => r.contributor)).size;
+
+      let avg = null, max = null;
+      if (readings) {
+        let sum = 0;
+        max = -Infinity;
+        filtered.forEach(r => { sum += r.pm; if (r.pm > max) max = r.pm; });
+        avg = sum / readings;
+      }
+
+      el('statReadings').textContent = readings ? readings.toLocaleString() : "0";
+      el('statContrib').textContent  = contributors ? contributors.toLocaleString() : "0";
+      el('statAvg').textContent      = avg !== null ? avg.toFixed(1) : "—";
+      el('statMax').textContent      = max !== null ? max.toFixed(1) : "—";
+
+      if (!readings) {
+        el('statNote').textContent = "No readings match your filters.";
+        return;
+      }
+
+      const unhealthySens = filtered.filter(r => r.pm >= 35.5).length;
+      const unhealthy = filtered.filter(r => r.pm >= 55.5).length;
+      const pct = (n) => (100 * n / readings);
+
+      el('statNote').textContent =
+        `${pct(unhealthySens).toFixed(0)}% of readings are ≥ 35.5 (unhealthy for sensitive groups). ` +
+        `${pct(unhealthy).toFixed(0)}% are ≥ 55.5 (unhealthy).`;
+    }
+
+    // =========================
+    // 10) URL STATE (FIXED)
+    // =========================
+    function updateURLState(forceReplace){
+      const state = {
+        c: el('selContributor').value,
+        t: el('selTime').value,
+        min: el('minPM').value,
+        max: el('maxPM').value,
+        p: el('chkPoints').checked ? 1 : 0,
+        l: el('chkLabels').checked ? 1 : 0,
+        z: el('chkAutoZoom').checked ? 1 : 0,
+        lat: map.getCenter().lat.toFixed(5),
+        lng: map.getCenter().lng.toFixed(5),
+        zoom: map.getZoom()
+      };
+
+      const params = new URLSearchParams(state);
+      const newUrl = window.location.pathname + "?" + params.toString();
+      history.replaceState(null, "", newUrl);
+    }
+
+    function applyStateFromURL(){
+      const params = new URLSearchParams(window.location.search);
+      if (!params.size) return;
+
+      const c = params.get("c"); if (c) el('selContributor').value = c;
+      const t = params.get("t"); if (t) el('selTime').value = t;
+
+      const min = params.get("min"); if (min !== null) el('minPM').value = min;
+      const max = params.get("max"); if (max !== null) el('maxPM').value = max;
+
+      const p = params.get("p"); if (p !== null) el('chkPoints').checked = (p === "1");
+      const l = params.get("l"); if (l !== null) el('chkLabels').checked = (l === "1");
+      const z = params.get("z"); if (z !== null) el('chkAutoZoom').checked = (z === "1");
+
+      // --- Corrected map-view logic ---
+      const lat = parseFloat(params.get("lat"));
+      const lng = parseFloat(params.get("lng"));
+      const zoom = parseInt(params.get("zoom"), 10);
+
+      const autoZoomOn = params.get("z") === "1";
+
+      // If auto-zoom is ON, ignore URL lat/lng/zoom (prevents world-view links)
+      if (!autoZoomOn) {
+        const inUganda =
+          isFinite(lat) && isFinite(lng) &&
+          lat > -2 && lat < 5 &&
+          lng > 29 && lng < 36;
+
+        if (inUganda && isFinite(zoom)) {
+          map.setView([lat, lng], zoom, { animate: false });
+        } else {
+          map.setView([0.3136, 32.5811], 12, { animate: false });
         }
       }
     }
-  });
-});
+  </script>
 
-// Legend
-const legend = L.control({position:'bottomleft'});
-legend.onAdd = function(){
-  const div = L.DomUtil.create('div','legend');
-  const grades=[0,12.1,35.5,55.5,150.5,250.5];
-  const labels=['Good','Moderate','Unhealthy (Sens.)','Unhealthy','Very Unhealthy','Hazardous'];
-
-  div.innerHTML+='<b>PM2.5 Index</b><br>';
-  for(let i=0;i<grades.length;i++){
-    div.innerHTML+='<i style="background:'+getPmColor(grades[i]+1)+'"></i>'+labels[i]+'<br>';
-  }
-  return div;
-};
-legend.addTo(map);
-</script>
-
+  <!--
+    GitHub Pages notes:
+    - Filenames are case-sensitive (julian.csv ≠ Julian.csv).
+    - Keep index.html, logo.png, and CSVs in the same folder (or update file paths).
+    - Update DATA_VERSION when CSVs change to avoid caching.
+  -->
 </body>
 </html>
